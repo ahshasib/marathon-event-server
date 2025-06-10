@@ -55,10 +55,11 @@ app.get('/marathon/:id',async(req,res)=>{
 
 app.get("/applications",async (req,res)=>{
         const email = req.query.email;
+        const title = req.query.title
 
-        const query ={
-                email: email
-        }
+        const query ={}
+        if(email) query.email = email;
+        if(title) query.title = {$regex:title,$options:"i"}
         const result = await applicationsCollection.find(query).toArray()
         res.send(result)
 })
