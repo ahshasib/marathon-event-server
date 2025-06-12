@@ -32,6 +32,8 @@ const marathonCollection = client.db("assignment-11-server").collection("maratho
 const applicationsCollection = client.db("assignment-11-server").collection("applications")
 
 
+//marathon related api
+
 // marathon all in home page
 
 app.get('/marathon', async(req,res)=>{
@@ -48,6 +50,14 @@ app.get('/marathon/:id',async(req,res)=>{
         const result = await marathonCollection.findOne(query);
         res.send(result)
 })
+
+
+app.post('/marathon',async(req,res)=>{
+const marathon = req.body;
+const result = await marathonCollection.insertOne(marathon);
+res.send(result);
+})
+
 
 
 // application related api
