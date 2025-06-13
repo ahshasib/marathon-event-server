@@ -79,11 +79,19 @@ app.patch('/marathon/:id',async(req,res)=>{
       marathonDate: req.body.marathonDate,
     }
   } 
-
   const result = await marathonCollection.updateOne(filter, updateElement)
   res.send(result)
 
 })
+
+//delet marathon
+app.delete('/marathon/:id', async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+
+  const result = await marathonCollection.deleteOne(filter);
+  res.send(result);
+});
 
 
 
