@@ -37,7 +37,16 @@ const applicationsCollection = client.db("assignment-11-server").collection("app
 // marathon all in home page
 
 app.get('/marathon', async(req,res)=>{
-        const cursor = marathonCollection.find();
+
+  //this 4 line are new added line 
+  const email = req.query.email;
+  const query = {};
+  if(email){
+    query.email = email;
+  }
+
+
+        const cursor = marathonCollection.find(query); //query is new line
         const result = await cursor.toArray();
         res.send(result);
 })
@@ -56,6 +65,24 @@ app.post('/marathon',async(req,res)=>{
 const marathon = req.body;
 const result = await marathonCollection.insertOne(marathon);
 res.send(result);
+})
+
+
+// update marathon
+
+app.patch('/marathon/:id',async(req,res)=>{
+  const id = req.params.id;
+  const filter = {_id: new ObjectId(id)}
+  const updateElement = {
+    $set: {
+      title : req.body.title,
+      marathonDate: req.body.marathonDate,
+    }
+  } 
+
+  const result = await marathonCollection.updateOne(filter, updateElement)
+  res.send(result)
+
 })
 
 
