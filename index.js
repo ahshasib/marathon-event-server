@@ -23,6 +23,46 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+const admin = require("firebase-admin");
+
+// Firebase Admin SDK init
+const serviceAccount = require("./firebase-adminsdk.json"); 
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+
+
+const verifyToken = async (req, res, next) =>{
+const authHeader = req.headers?.authorization;
+
+if(!authHeader || !authHeader.startsWith('Bearer ')){
+  return res.status(401).send({message:"Unauthorized access"}
+  )
+}
+const token = authHeader.split(' ')[1];
+
+try{
+  const decoded = await admin.auth().verifyIdToken(token);
+  console.log("decod token",decoded)
+  req.decoded = decoded;
+  next();
+}
+catch(error){
+ return res.status(401).send({message:"Unauthorized access"}
+  )
+}
+}
+
+const verifyEmailToken = (req, res, next) =>{
+if(req.query.email !== req.decoded.email){
+  return res.status(403).send({message:'forbidden access'})
+}
+ next()
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -36,7 +76,7 @@ const applicationsCollection = client.db("assignment-11-server").collection("app
 
 // marathon all in home page
 
-app.get('/marathon', async(req,res)=>{
+app.get('/marathon',verifyToken, verifyEmailToken, async(req,res)=>{
 
   //this 4 line are new added line 
   const email = req.query.email;
@@ -98,7 +138,7 @@ app.delete('/marathon/:id', async (req, res) => {
 // application related api
 
 
-app.get("/applications",async (req,res)=>{
+app.get("/applications", verifyToken, verifyEmailToken, async (req,res)=>{
         const email = req.query.email;
         const title = req.query.title
 
