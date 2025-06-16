@@ -76,7 +76,15 @@ const applicationsCollection = client.db("assignment-11-server").collection("app
 
 // marathon all in home page
 
-app.get('/marathon',verifyToken, verifyEmailToken, async(req,res)=>{
+app.get("/marathon", async (req, res) => {
+  const result = await marathonCollection.find().toArray();
+  res.send(result);
+});
+
+
+// for my-marathon-List
+
+app.get('/my-marathon',verifyToken,verifyEmailToken, async(req,res)=>{
 
   //this 4 line are new added line 
   const email = req.query.email;
@@ -138,7 +146,7 @@ app.delete('/marathon/:id', async (req, res) => {
 // application related api
 
 
-app.get("/applications", verifyToken, verifyEmailToken, async (req,res)=>{
+app.get("/applications", verifyToken,verifyEmailToken, async (req,res)=>{
         const email = req.query.email;
         const title = req.query.title
 
