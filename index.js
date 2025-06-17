@@ -6,7 +6,10 @@ const port = process.env.PORT || 3000;
 require('dotenv').config()
 
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://assignment-11-c46c7.web.app'],
+  credentials: true
+}));
 app.use(express.json());
 
 
@@ -74,10 +77,16 @@ async function run() {
 
     //marathon related api
 
-    // marathon all in home page
+    // marathon all page
 
     app.get("/marathon", async (req, res) => {
-      const result = await marathonCollection.find().toArray();
+      const result = await marathonCollection.find().sort({ createdAt: -1 }).toArray();
+      res.send(result);
+    });
+
+    //marathon event for home
+    app.get("/marathon/latest", async (req, res) => {
+      const result = await marathonCollection.find().sort({ createdAt: -1 }).limit(6).toArray();
       res.send(result);
     });
 
@@ -204,8 +213,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     //     await client.close();
