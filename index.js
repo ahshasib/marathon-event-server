@@ -69,7 +69,7 @@ const verifyEmailToken = (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const marathonCollection = client.db("assignment-11-server").collection("marathon");
     const applicationsCollection = client.db("assignment-11-server").collection("applications")
