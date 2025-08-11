@@ -155,7 +155,7 @@ async function run() {
 
     //daily user data share and update 
 
-    // ধরুন আপনার UserRunningData নামে একটা মডেল আছে, যেখানে userId, dailyData থাকে
+    
 
 
     app.patch('/running-data', async (req, res) => {
