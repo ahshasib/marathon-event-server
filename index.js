@@ -155,10 +155,10 @@ async function run() {
 
     //daily user data share and update 
 
-    
 
 
-    app.patch('/running-data', async (req, res) => {
+
+   app.patch('/running-data', async (req, res) => {
   try {
     const { userId, dailyData } = req.body;
 
@@ -183,23 +183,36 @@ async function run() {
     const existingData = await collection.findOne({ userId });
 
     if (existingData) {
-      // Patch/update existing dailyData
+      const updatedDailyData = [...existingData.dailyData];
+
+      // শুধু যেসব দিন আসছে সেগুলো replace করো
       calculatedData.forEach(newDay => {
-        const index = existingData.dailyData.findIndex(d => d.day === newDay.day);
+        const index = updatedDailyData.findIndex(d => d.day === newDay.day);
         if (index > -1) {
-          existingData.dailyData[index] = newDay;
+          updatedDailyData[index] = newDay; // পুরোনো ডেটা replace
         } else {
-          existingData.dailyData.push(newDay);
+          updatedDailyData.push(newDay); // নতুন দিন যোগ করো
         }
       });
 
-      await collection.updateOne({ userId }, { $set: { dailyData: existingData.dailyData } });
-      return res.json({ message: 'Data updated successfully', data: existingData });
+      await collection.updateOne(
+        { userId },
+        { $set: { dailyData: updatedDailyData } }
+      );
+
+      return res.json({
+        message: 'Data updated successfully',
+        data: { userId, dailyData: updatedDailyData }
+      });
+
     } else {
       // Insert new record
       const newData = { userId, dailyData: calculatedData };
       await collection.insertOne(newData);
-      return res.status(201).json({ message: 'Data saved successfully', data: newData });
+      return res.status(201).json({
+        message: 'Data saved successfully',
+        data: newData
+      });
     }
   } catch (error) {
     console.error(error);
@@ -208,17 +221,69 @@ async function run() {
 });
 
 
+  //get user all daily data
+
+  app.get('/api/user-stats', async (req, res) => {
+    try {
+      const { userId } = req.query; // Frontend থেকে userId কুয়েরি প্যারামস দিয়ে আসবে
+
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+
+      const userData = await collection.findOne({ userId });
+
+      if (!userData) {
+        return res.status(404).json({ error: 'No data found for this user' });
+      }
+
+      // Lifetime distance
+      const lifetime = userData.dailyData.reduce((sum, day) => sum + day.distance, 0);
+
+      // Longest run
+      const longestRun = Math.max(...userData.dailyData.map(day => day.distance));
+
+      // Monthly data group by month
+      const monthlyMap = {};
+      userData.dailyData.forEach(day => {
+        const monthName = new Date(day.year, day.month - 1).toLocaleString('default', { month: 'short' });
+        monthlyMap[monthName] = (monthlyMap[monthName] || 0) + day.distance;
+      });
+      const monthlyData = Object.keys(monthlyMap).map(month => ({
+        month,
+        distance: monthlyMap[month]
+      }));
+
+      // Daily data (this month only)
+      const currentMonth = new Date().getMonth() + 1;
+      const dailyData = userData.dailyData.filter(day => day.month === currentMonth);
+
+      res.json({
+        lifetime,
+        longestRun,
+        monthlyData,
+        dailyData
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
 
 
-    // health
-    app.get('/', (req, res) => res.send('Hello World!'));
 
-    app.listen(port, () => {
-      console.log(`Server listening on port ${port}`);
-    });
 
-  } catch (err) {
-    console.error('Run error:', err);
-  }
+
+  // health
+  app.get('/', (req, res) => res.send('Hello World!'));
+
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+
+} catch (err) {
+  console.error('Run error:', err);
+}
 }
 run().catch(console.dir);
