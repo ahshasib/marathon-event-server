@@ -158,67 +158,73 @@ async function run() {
 
 
 
-   app.patch('/running-data', async (req, res) => {
+  app.patch('/running-data', async (req, res) => {
   try {
     const { userId, dailyData } = req.body;
 
-    if (!userId || !dailyData) {
+    if (!userId || !Array.isArray(dailyData)) {
       return res.status(400).json({ error: 'User ID and daily data required' });
     }
 
-    // Calculate speed on server side
-    const calculatedData = dailyData.map(item => {
-      const speed = item.time === 0 ? 0 : item.distance / (item.time / 60); // km/h
-      return {
-        day: item.day,
-        distance: item.distance,
-        time: item.time,
-        speed,
-        year: item.year,
-        month: item.month,
-      };
-    });
-
-    // Check if existing data for user
+    // Step 1: পুরানো ডেটা বের করো বা নতুন ৩০ দিনের ডেটা তৈরি করো
+    let fullData;
     const existingData = await collection.findOne({ userId });
 
+    if (existingData && Array.isArray(existingData.dailyData)) {
+      // পুরানো ডেটা থেকে deep copy
+      fullData = existingData.dailyData.map(d => ({ ...d }));
+    } else {
+      // নতুন খালি dataset তৈরি করো
+      const yearNow = new Date().getFullYear();
+      const monthNow = new Date().getMonth() + 1;
+      fullData = Array.from({ length: 30 }, (_, i) => ({
+        day: (i + 1).toString(),
+        distance: 0,
+        time: 0,
+        speed: 0,
+        year: yearNow,
+        month: monthNow
+      }));
+    }
+
+    // Step 2: শুধু matching দিনগুলা আপডেট করো
+    dailyData.forEach(item => {
+      const index = fullData.findIndex(d => d.day === item.day.toString());
+      if (index !== -1) {
+        const speed = item.time === 0 ? 0 : item.distance / (item.time / 60);
+
+        fullData[index] = {
+          ...fullData[index], // পুরানো data রেখে
+          distance: item.distance ?? fullData[index].distance,
+          time: item.time ?? fullData[index].time,
+          speed,
+          year: item.year ?? fullData[index].year,
+          month: item.month ?? fullData[index].month
+        };
+      }
+    });
+
+    // Step 3: ডাটাবেজে সেভ করো
     if (existingData) {
-      const updatedDailyData = [...existingData.dailyData];
-
-      // শুধু যেসব দিন আসছে সেগুলো replace করো
-      calculatedData.forEach(newDay => {
-        const index = updatedDailyData.findIndex(d => d.day === newDay.day);
-        if (index > -1) {
-          updatedDailyData[index] = newDay; // পুরোনো ডেটা replace
-        } else {
-          updatedDailyData.push(newDay); // নতুন দিন যোগ করো
-        }
-      });
-
       await collection.updateOne(
         { userId },
-        { $set: { dailyData: updatedDailyData } }
+        { $set: { dailyData: fullData } }
       );
-
-      return res.json({
-        message: 'Data updated successfully',
-        data: { userId, dailyData: updatedDailyData }
-      });
-
     } else {
-      // Insert new record
-      const newData = { userId, dailyData: calculatedData };
-      await collection.insertOne(newData);
-      return res.status(201).json({
-        message: 'Data saved successfully',
-        data: newData
-      });
+      await collection.insertOne({ userId, dailyData: fullData });
     }
+
+    res.json({
+      message: 'Data merged successfully',
+      data: { userId, dailyData: fullData }
+    });
+
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('PATCH /running-data error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
   //get user all daily data
