@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;
 
 // CORS - allow your dev frontend + production origin
 app.use(cors({
-  origin: ['http://localhost:5173'], // add production origin too when deployed
+  origin: ['https://milesmaster-81633.web.app'], // add production origin too when deployed
   credentials: true
 }));
 app.use(express.json());
