@@ -153,6 +153,34 @@ async function run() {
     });
 
 
+// Update an application
+app.patch('/applications/:id', verifyToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) };
+
+    // _id বাদ দিয়ে শুধু update fields নেওয়া
+    const { _id, ...updateFields } = req.body;
+
+    const result = await applicationsCollection.updateOne(
+      filter,
+      { $set: updateFields }
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+app.delete('/applications/:id', verifyToken, async (req, res) => {
+  const id = req.params.id;
+  const result = await applicationsCollection.deleteOne({ _id: new ObjectId(id) });
+  res.json(result);
+});
+
+
+
     //daily user data share and update 
 
 
