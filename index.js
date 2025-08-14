@@ -20,7 +20,11 @@ app.use(cors({
 app.use(express.json());
 
 // Firebase Admin init - put your firebase-adminsdk.json in server folder
-const serviceAccount = require('./firebase-adminsdk.json');
+// const serviceAccount = require("./firebase-admin-key.json");
+
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const serviceAccount = JSON.parse(decoded);
+// const serviceAccount = require('./firebase-adminsdk.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -60,8 +64,8 @@ const verifyEmailToken = (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
-    console.log('Connected to MongoDB');
+    // await client.connect();
+    // console.log('Connected to MongoDB');
 
     const marathonCollection = client.db("assignment-11-server").collection("marathon");
     const applicationsCollection = client.db("assignment-11-server").collection("applications");
